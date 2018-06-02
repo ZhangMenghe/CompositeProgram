@@ -1,0 +1,84 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CudaCompile Include="kernel.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source">
+      <UniqueIdentifier>{ef224f06-00cc-46b3-a845-214497a0c3ee}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\TCPServer">
+      <UniqueIdentifier>{66dbadce-ac60-4597-b92b-7690512d81c1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header">
+      <UniqueIdentifier>{e9fbcaf9-1dd3-42ce-b645-12ddc99f1471}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source\Layouter">
+      <UniqueIdentifier>{adca3ba8-d986-4554-8c74-29f85a8ac60c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header\Layouter">
+      <UniqueIdentifier>{2fa839e8-4ce2-4cb2-aa49-a080c79335a3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header\TCPServer">
+      <UniqueIdentifier>{c4ab9925-80e4-485f-8fda-94185ac94794}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="TCPServer\Encoder.cpp">
+      <Filter>Source\TCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer\Pipehandler.cpp">
+      <Filter>Source\TCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer\Server.cpp">
+      <Filter>Source\TCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer\stdafx.cpp">
+      <Filter>Source\TCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="TCPServer\TCPServer.cpp">
+      <Filter>Source\TCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="room.cpp">
+      <Filter>Source\Layouter</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="TCPServer\Encoder.h">
+      <Filter>Header\TCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer\Pipehandler.h">
+      <Filter>Header\TCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer\stdafx.h">
+      <Filter>Header\TCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer\targetver.h">
+      <Filter>Header\TCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="TCPServer\TCPServer.h">
+      <Filter>Header\TCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\hostUtils.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\predefinedConstrains.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\processFixedObjects.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\constrainTerms.cuh">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\cudaroom.cuh">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\utils.cuh">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\room.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
