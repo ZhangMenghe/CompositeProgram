@@ -43,6 +43,8 @@ public:
   bool encode(float* mat, MESSAGETYPE messagetype, byte* output);
 
   std::tuple<bool, int, int, MESSAGETYPE, DATATYPE> decode(const byte* input, const int recvlen, void** output);
+  
+  bool decode(const byte* input, const int recvlen, void** output, int * width, int *height, MESSAGETYPE * messagetype, DATATYPE * dataType);
 
   void decodeImage(byte* input, byte* output, int size);
 

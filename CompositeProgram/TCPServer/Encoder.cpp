@@ -33,7 +33,41 @@ bool Encoder::encode(float* mat, MESSAGETYPE messagetype, byte* output)
 
   return true;
 }
+bool Encoder::decode(const byte* input, const int recvlen, void** output, 
+					int * width, int *height, 
+					Encoder::MESSAGETYPE * messagetype, Encoder::DATATYPE * dataType) {
 
+	memcpy(width, input + MessageWidthIndex, 4);
+	memcpy(height, input + MessageHeightIndex, 4);
+	*messagetype = (MESSAGETYPE)input[MessageTypeIndex];
+	*dataType = (DATATYPE)input[DataTypeIndex];
+	int totalSize = (*width) * (*height) + HeaderSize;
+
+	if (*messagetype > 7) {
+		printf("Invalid MessageType %d\n", input[MessageTypeIndex]);
+		return false;
+	}else if (*messagetype == Encoder::STRING) {
+		(*output) = (byte*)calloc(*width, 1);
+
+		memcpy(*output, input + DataStartPosition, *width);
+		return true;
+	}
+	if (*dataType > 3)
+	{
+		printf("Invalid DataType %d\n", *dataType);
+		return false;
+	}
+	if (totalSize != recvlen)
+	{
+		printf("Expected size: %d, but only recieve size: %d\n", totalSize, recvlen);
+		return false;
+	}
+
+	(*output) = (byte*)calloc((*width) * (*height), 1);
+
+	memcpy(*output, input + DataStartPosition, (*width) * (*height));
+	return true;
+}
 std::tuple<bool, int, int, Encoder::MESSAGETYPE, Encoder::DATATYPE> Encoder::decode(const byte* input,
                                                                                     const int recvlen, void** output)
 {
@@ -47,8 +81,6 @@ std::tuple<bool, int, int, Encoder::MESSAGETYPE, Encoder::DATATYPE> Encoder::dec
   memcpy(&height, input + MessageHeightIndex, 4);
 
   int totalSize = width * height + HeaderSize;
-
-  
 
   mtype = input[MessageTypeIndex];
   dtype = input[DataTypeIndex];

@@ -114,16 +114,21 @@ void TCPServer::update()
           //break;
         }
         void* output = 0;
+		int width, height;
+		Encoder::MESSAGETYPE messagetype;
+		Encoder::DATATYPE dataType;
+		bool decode_result = encoder->decode((byte*)recvbuf, iResult, &output,
+											  &width, &height, &messagetype, &dataType);
         //auto [decode_result, width, height, messagetype, dataType] = encoder->decode((byte*)recvbuf, iResult, &output);
 
-		Encoder::MESSAGETYPE messagetype = Encoder::STRING;
+		/*Encoder::MESSAGETYPE messagetype = Encoder::STRING;
 		int width = 4;
 		int height = 1;
 		bool decode_result = true;
 		Encoder::DATATYPE dataType = Encoder::DATATYPE::BYTE;
 		output = (byte*)calloc(width, 1);
 
-		memcpy(output, (byte*)recvbuf + 12, width);
+		memcpy(output, (byte*)recvbuf + 12, width);*/
 
 		if (messagetype == Encoder::STRING) {
 			std::string s((char *)output);

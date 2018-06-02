@@ -510,7 +510,7 @@ void startToProcess(Room * m_room, int nTimes) {
 void Entrance(string rawString) {
 	//for debug only
 	//if(rawString.length() == 0)
-		//rawString = "r : 400,300 \n w : -200, 150, 200, 150 \nw:-200, -150, -200, 150\nw:200, -150, 200, 150\nw:-200, -150, 200, -150\nf:0, 0, 100, 200, 0, 4, 10";//\n p : 0, 150, 0\nf:0, 0, 100, 200, 0, 4, 10\nf:0, 0, 50, 50, 0, 0, 10";
+		rawString = "r : 400,300 \n w : -200, 150, 200, 150 \nw:-200, -150, -200, 150\nw:200, -150, 200, 150\nw:-200, -150, 200, -150\nf:0, 0, 100, 200, 0, 4, 10";//\n p : 0, 150, 0\nf:0, 0, 100, 200, 0, 4, 10\nf:0, 0, 50, 50, 0, 0, 10";
 	Room* parserRoom = new Room();
 	parser_customer_input_string(rawString, parserRoom);
 	startToProcess(parserRoom, PROCESS_NTIMES);
