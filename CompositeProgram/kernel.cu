@@ -66,7 +66,6 @@ void changeTemparature(float * temparature) {
 __device__
 void random_along_wall(sharedRoom * room, singleObj * obj) {
 	wall * swall = &room->deviceWalls[get_int_random(room->wallNum)];
-	//wall * swall = &room->deviceWalls[4];
 	float mwidth, mheight;
 	if (get_int_random(2) == 0) {
 		mwidth = obj->objWidth; mheight = obj->objHeight;
@@ -123,6 +122,7 @@ void initial_assignment(sharedRoom* room, singleObj * objs,
 		for (int i = 0; i<MAX_KEPT_RES; i++) {
 			sWrapper[0].resTransAndRot[singleSize*i + threadIdx.x * 4] = INFINITY;
 		}
+		//printf("%d: %f, %f, %f\n", threadIdx.x, obj->translation[0], obj->translation[1], obj->zrotation);
 	}
 	memcpy(mask, initialMask, room->mskCount * sizeof(unsigned char));
 
@@ -155,6 +155,8 @@ void getTemporalTransAndRot(sharedRoom * room, singleObj* objs, float * results,
 			maxPos = i; maxCost = results[singleSize * i];
 		}
 	}
+	//if (threadIdx.x == 0)
+		//printf("cost :%f, pos: %d \n", cost, maxPos);
 	if (cost < maxCost) {
 		int baseId = singleSize * maxPos;
 		results[baseId] = cost;
@@ -163,6 +165,8 @@ void getTemporalTransAndRot(sharedRoom * room, singleObj* objs, float * results,
 			results[baseId + 4 * i + 2] = objs[i].translation[1];
 			results[baseId + 4 * i + 3] = objs[i].translation[2];
 			results[baseId + 4 * i + 4] = objs[i].zrotation;
+			//if(threadIdx.x == 0)
+			//printf("%f - %f - %f -%f \n", results[baseId + 4 * i + 1], results[baseId + 4 * i + 2], results[baseId + 4 * i + 3], results[baseId + 4 * i + 4]);
 		}
 	}
 }
@@ -249,6 +253,7 @@ int randomly_perturb(sharedRoom* room, singleObj * objs, int pickedIdx,
 
 	return secondChangeId;
 }
+
 __device__
 void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
 	float cpost, p0, p1, alpha;
@@ -269,6 +274,7 @@ void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
 
 	float cpre = sumUp_weighted_dataInShare(&costList[startId + 1], weights, WEIGHT_NUM);
 	getTemporalTransAndRot(room, objsBlock, sWrapper[0].resTransAndRot, cpre);
+	
 	if (blockIdx.x == 0 && threadIdx.x == 0)
 		displayResult(costList, weights);
 	if (sWrapper[0].nTimes == 0)
@@ -508,11 +514,8 @@ void startToProcess(Room * m_room, int nTimes) {
 }
 
 void Entrance(string rawString) {
-	//for debug only
-	//if(rawString.length() == 0)
-		rawString = "r : 400,300 \n w : -200, 150, 200, 150 \nw:-200, -150, -200, 150\nw:200, -150, 200, 150\nw:-200, -150, 200, -150\nf:0, 0, 100, 200, 0, 4, 10";//\n p : 0, 150, 0\nf:0, 0, 100, 200, 0, 4, 10\nf:0, 0, 50, 50, 0, 0, 10";
 	Room* parserRoom = new Room();
-	parser_customer_input_string(rawString, parserRoom);
+	parser_customer_input_string(rawString, parserRoom, true);
 	startToProcess(parserRoom, PROCESS_NTIMES);
 }
 

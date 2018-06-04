@@ -62,12 +62,6 @@
     <ClInclude Include="Layouter\hostUtils.h">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
-    <ClInclude Include="Layouter\predefinedConstrains.h">
-      <Filter>Header\Layouter</Filter>
-    </ClInclude>
-    <ClInclude Include="Layouter\processFixedObjects.h">
-      <Filter>Header\Layouter</Filter>
-    </ClInclude>
     <ClInclude Include="Layouter\constrainTerms.cuh">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
@@ -78,6 +72,12 @@
       <Filter>Header\Layouter</Filter>
     </ClInclude>
     <ClInclude Include="Layouter\room.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="predefinedFurnitureParams.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+    <ClInclude Include="Layouter\predefinedConstrains.h">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
   </ItemGroup>

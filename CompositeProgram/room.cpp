@@ -37,28 +37,24 @@ void Room::init_a_wall(wall *newWall, vector<float> params) {
 		newWall->zrotation = (atanf(newWall->a) < 0) ? PI / 2 - atanf(newWall->a) : atanf(newWall->a);
 	}
 }
-// 4*2 vertices, 2 center, 2 size, angle, label, zheight
+// 4*2 vertices, 2 center, 3 size, angle, label, groupNum
 void Room::init_an_object(vector<float>params, bool isFixed, bool isPrevious) {
 	singleObj obj;
 	obj.id = objects.size();
 	//vertices
 	copy(params.begin(), params.begin() + 8, obj.vertices);
 
-	obj.translation[0] = params[8]; obj.translation[1] = params[9]; obj.translation[2] = .0f;
-	obj.objWidth = params[10];
-	obj.objHeight = params[11];
-	set_obj_zrotation(&obj, params[12] * ANGLE_TO_RAD_F);
+	obj.translation[0] = params[8+OBJINPUTS::CX]; obj.translation[1] = params[8+ OBJINPUTS::CY]; obj.translation[2] = .0f;
+	obj.objWidth = params[8 + OBJINPUTS::WIDTH];
+	obj.objHeight = params[8 + OBJINPUTS::HEIGHT];
+	set_obj_zrotation(&obj, params[8 + OBJINPUTS::ROTATION] * ANGLE_TO_RAD_F);
 	//obj.zrotation = params[12] * ANGLE_TO_RAD_F;
-	obj.catalogId = params[13];
-	obj.zheight = params[14];
+	obj.catalogId = params[8 + OBJINPUTS::CATE];
+	obj.zheight = params[8 + OBJINPUTS::ZHEIGHT];
 	obj.area = obj.objWidth * obj.objHeight;
 	obj.isFixed = isFixed;
-	obj.alignedTheWall = (obj.catalogId == TYPE_SHELF || obj.catalogId == TYPE_BED || obj.catalogId == TYPE_TABLE) ? true : false;
-	obj.adjoinWall = (obj.catalogId == TYPE_SHELF || obj.catalogId == TYPE_BED || obj.catalogId == TYPE_TABLE) ? true : false;
-
-	// TODO: is it necessary?
-	// if (!isPrevious)//existing objs' values should be
-	// update_obj_boundingBox_and_vertices(obj, 0);
+	obj.alignedTheWall = (obj.catalogId == TYPE_SHELF || obj.catalogId == TYPE_BED || obj.catalogId == TYPE_DESK) ? true : false;
+	obj.adjoinWall = (obj.catalogId == TYPE_SHELF || obj.catalogId == TYPE_BED) ? true : false;
 
 	//move this calculation to device
 	indepenFurArea += obj.objWidth * obj.objHeight; //get_single_obj_maskArea(obj.vertices);
@@ -67,14 +63,14 @@ void Room::init_an_object(vector<float>params, bool isFixed, bool isPrevious) {
 
 	int gidx = 0;
 	for (; gidx<groupNum; gidx++) {
-		if (groupMap[gidx].gid == params[15]) {
+		if (groupMap[gidx].gid == params[8 + OBJINPUTS::GROUPNUM]) {
 			groupMap[gidx].objIds[groupMap[gidx].memNum++] = obj.id;
 			break;
 		}
 
 	}
 	if (gidx == groupNum) {
-		groupMap[groupNum].gid = params[15];
+		groupMap[groupNum].gid = params[8 + OBJINPUTS::GROUPNUM];
 		groupMap[groupNum].memNum = 1;
 		groupMap[groupNum].objIds[0] = obj.id;
 		groupNum++;
@@ -165,29 +161,29 @@ void Room::add_a_wall(vector<float> params) {
 }
 void Room::add_an_object(vector<float> params, bool isPrevious, bool isFixed) {
 	if (params.size() < 15) {
-		float hw = params[2] / 2, hh = params[3] / 2;
-		float cx = params[0], cy = params[1];
+		float hw = params[OBJINPUTS::WIDTH] / 2, hh = params[OBJINPUTS::HEIGHT] / 2;
+		float cx = params[OBJINPUTS::CX], cy = params[OBJINPUTS::CY];
 		float res[8] = { -hw + cx, hh + cy, hw + cx, hh + cy, hw + cx, -hh + cy, -hw + cx, -hh + cy };
 		vector<float>vertices(res, res + 8);// get_vertices_by_pos(params[0], params[1], params[2] / 2, params[3] / 2);
 		params.insert(params.begin(), vertices.begin(), vertices.end());
 	}
 	if (isPrevious) {
-		switch (int(params[13]))
+		switch (int(params[OBJINPUTS::CATE]))
 		{
 		case 1:
-			params[13] = TYPE_FLOOR;
+			params[OBJINPUTS::CATE] = TYPE_FLOOR;
 			break;
 		case 3://chair
-			params[13] = TYPE_CHAIR;
+			params[OBJINPUTS::CATE] = TYPE_CHAIR;
 			break;
 		case 8:
-			params[13] = TYPE_WALL;
+			params[OBJINPUTS::CATE] = TYPE_WALL;
 			break;
 		case 10:
-			params[13] = TYPE_OTHER;
+			params[OBJINPUTS::CATE] = TYPE_OTHER;
 			break;
 		case 11:
-			params[13] = TYPE_CEILING;
+			params[OBJINPUTS::CATE] = TYPE_CEILING;
 			break;
 		}
 	}

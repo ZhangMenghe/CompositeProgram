@@ -101,9 +101,9 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="Layouter\cudaroom.cuh" />
     <ClInclude Include="Layouter\hostUtils.h" />
     <ClInclude Include="Layouter\predefinedConstrains.h" />
-    <ClInclude Include="Layouter\processFixedObjects.h" />
     <ClInclude Include="Layouter\room.h" />
     <ClInclude Include="Layouter\utils.cuh" />
+    <ClInclude Include="predefinedFurnitureParams.h" />
     <ClInclude Include="TCPServer\Encoder.h" />
     <ClInclude Include="TCPServer\Pipehandler.h" />
     <ClInclude Include="TCPServer\stdafx.h" />
