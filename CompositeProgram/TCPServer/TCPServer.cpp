@@ -4,7 +4,7 @@
 #include "Encoder.h"
 
 extern Encoder* encoder;
-extern void Entrance(std::string rawString);
+extern void Entrance(std::string rawString, std::string &resString);
 
 TCPServer::TCPServer()
 {
@@ -88,7 +88,9 @@ bool TCPServer::acceptClient()
 
 void TCPServer::update()
 {
-  Entrance("0 4 10");
+  //
+	std::string gResString;
+	Entrance("4", gResString);
   do
   {
     bool res = acceptClient();
@@ -133,8 +135,8 @@ void TCPServer::update()
 
 		if (messagetype == Encoder::STRING) {
 			std::string s((char *)output);
-			Entrance(s.substr(0, width));
-
+			//Entrance(s.substr(0, width), &gResTransAndRot);
+			printf("string get: %s\n", s.substr(0, width));
 		}
         if(messagetype == Encoder::RGB_R)
         {
@@ -234,7 +236,7 @@ void TCPServer::update()
             printf("Image end\n");
           }
         }
-
+		//TODO:SEND BACK RESULTS gResTransAndRot
         const char* backBuf = "Data Processed";
 
         if (seqhandlers.size() > 0)

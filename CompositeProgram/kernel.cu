@@ -411,7 +411,7 @@ void copyShare(Room * hroom, sharedRoom * sroom) {
 	cudaMemcpy(sroom->groupMap, hroom->groupMap, MAX_GROUP_ALLOW * sizeof(groupMapStruct), cudaMemcpyHostToDevice);
 	cudaMemcpy(sroom->pairMap, hroom->pairMap, CONSTRAIN_PAIRS * sizeof(pairMapStruct), cudaMemcpyHostToDevice);
 }
-void generate_suggestions(Room * m_room, int nTimes) {
+void generate_suggestions(Room * m_room, string & resString, int nTimes) {
 	sharedWrapper *gWrapper;
 	cudaMallocManaged(&gWrapper, sizeof(sharedWrapper));
 
@@ -475,6 +475,21 @@ void generate_suggestions(Room * m_room, int nTimes) {
 	cudaDeviceSynchronize();
 	const char * errStr = cudaGetErrorString(cudaGetLastError());
 	cout << "error:" << errStr << endl;
+
+	display_suggestions(m_room, gWrapper->resTransAndRot);
+	
+	int resObjMem = (5*m_room->objctNum+1)*sizeof(float);//id, cate, width, height, zheight
+
+
+	resString = std::to_string( m_room->objctNum ) ;
+	for (int i = 0; i < m_room->objctNum; i++) {
+		resString += " " + to_string(m_room->objects[i].id);
+		resString += " " + to_string(m_room->objects[i].catalogId);
+		resString += " " + to_string(m_room->objects[i].objWidth);
+		resString += " " + to_string(m_room->objects[i].objHeight);
+		resString += " " + to_string(m_room->objects[i].zheight);
+	}
+		
 	int singleSize = 4 * m_room->objctNum + 1;
 	for (int i = 0, startId = 0; i< MAX_KEPT_RES; i++, startId = i * singleSize) {
 		cout << "result: " << i << "- cost: " << gWrapper->resTransAndRot[startId] << endl;
@@ -482,12 +497,13 @@ void generate_suggestions(Room * m_room, int nTimes) {
 		for (int n = 0; n<m_room->objctNum; n++) {
 			cout << "object: " << n << " pos and rot:";
 			string res = "";
-			for (int pi = 1; pi<5; pi++)
-				res += to_string(gWrapper->resTransAndRot[startId + 4 * n + pi]) + " ";
+			for (int pi = 1; pi < 5; pi++)
+				res += " " + to_string(gWrapper->resTransAndRot[startId + 4 * n + pi]);
+			resString += res;
 			cout << res << endl;
 		}
 	}
-	display_suggestions(m_room, gWrapper->resTransAndRot);
+
 	cudaFree(gWrapper->wRoom);
 	cudaFree(gWrapper->wObjs);
 	cudaFree(gWrapper->initialMask);
@@ -498,7 +514,7 @@ void generate_suggestions(Room * m_room, int nTimes) {
 	cudaFree(gWrapper->wPairRelation);
 	cudaFree(gWrapper->resTransAndRot);
 }
-void startToProcess(Room * m_room, int nTimes) {
+void startToProcess(Room * m_room, string &resString, int nTimes) {
 	if (m_room->objctNum == 0)
 		return;
 	setUpDevices();
@@ -506,16 +522,16 @@ void startToProcess(Room * m_room, int nTimes) {
 	clock_t start, finish;
 	float costtime;
 	start = clock();
-	generate_suggestions(m_room, nTimes);
+	generate_suggestions(m_room, resString, nTimes);
 
 	finish = clock();
 	costtime = (float)(finish - start) / CLOCKS_PER_SEC;
 	cout << "Runtime: " << costtime << endl;
 }
 
-void Entrance(string rawString) {
+void Entrance(string rawString, string &resString) {
 	Room* parserRoom = new Room();
 	parser_customer_input_string(rawString, parserRoom, true);
-	startToProcess(parserRoom, PROCESS_NTIMES);
+	startToProcess(parserRoom, resString, PROCESS_NTIMES);
 }
 
