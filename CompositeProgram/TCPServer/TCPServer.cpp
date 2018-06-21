@@ -90,7 +90,7 @@ void TCPServer::update()
 {
   //
 	std::string gResString;
-	Entrance("4", gResString);
+	Entrance("4 1", gResString);
   do
   {
     bool res = acceptClient();
@@ -135,8 +135,9 @@ void TCPServer::update()
 
 		if (messagetype == Encoder::STRING) {
 			std::string s((char *)output);
-			//Entrance(s.substr(0, width), &gResTransAndRot);
-			printf("string get: %s\n", s.substr(0, width));
+			//remove last ","
+			printf("string get: %s\n", s.substr(0, width-1));
+			Entrance(s.substr(0, width-1), gResString);
 		}
         if(messagetype == Encoder::RGB_R)
         {
@@ -237,12 +238,13 @@ void TCPServer::update()
           }
         }
 		//TODO:SEND BACK RESULTS gResTransAndRot
-        const char* backBuf = "Data Processed";
-
-        if (seqhandlers.size() > 0)
+        //const char* backBuf = "Data Processed\n";
+		char *backBuf = new char[gResString.length() + 1];
+		strcpy(backBuf, gResString.c_str());
+        /*if (seqhandlers.size() > 0)
         {
            byte* data = seqhandlers[0]->exchange((byte*)recvbuf, iResult);
-        }
+        }*/
 
         iSendResult = send(ClientSocket, backBuf, strlen(backBuf) + 1, 0);
         if (iSendResult == SOCKET_ERROR)
