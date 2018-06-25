@@ -17,7 +17,7 @@ using namespace std;
 
 #define THREADHOLD_T 0.7
 
-const unsigned int nBlocks = 2;
+const unsigned int nBlocks = 1;
 const unsigned int nThreads = 32;//it's werid
 const unsigned int WHICH_GPU = 0;
 
@@ -27,14 +27,16 @@ struct sharedWrapper {
 	int nTimes;
 	sharedRoom *wRoom;//1
 	singleObj *wObjs;//nblocks
-	unsigned char *initialMask;//1
-	unsigned char *wMask;//nblocks
-	unsigned char* backMask;//nblocks
 	float * obstacleVertices;//1
-	float * wmaskArea;//nblocks * 2
 	float *wFloats;//1
 	int *wPairRelation;//1
 	float * resTransAndRot;//1 for all objs and all blocks
+};
+struct maskWrapper {
+	unsigned char *initialMask;//1
+	unsigned char *wMask;//nblocks
+	unsigned char* backMask;//nblocks
+	float * wmaskArea;//nblocks * 2
 };
 
 void setUpDevices() {
@@ -108,8 +110,8 @@ void random_along_wall(sharedRoom * room, singleObj * obj) {
 
 __device__
 void initial_assignment(sharedRoom* room, singleObj * objs,
-	unsigned char* initialMask, unsigned char * mask, unsigned char * backupMask,
-	float* tmpSlot) {
+						unsigned char* initialMask, unsigned char * mask, unsigned char * backupMask,
+						float * wmaskArea, float* tmpSlot) {
 	if (threadIdx.x < room->objctNum) {
 		singleObj * obj = &objs[threadIdx.x];
 		if (obj->adjoinWall)
@@ -131,18 +133,19 @@ void initial_assignment(sharedRoom* room, singleObj * objs,
 	for (int i = 0; i < room->objctNum; i++) {
 		mRect2f rect = get_circulate_boundingbox(room, &objs[i].boundingBox);
 		update_mask_by_boundingBox(backupMask, rect, room->rowCount / 2, room->colCount, threadIdx.x, nThreads);
-		if (!objs[i].isFixed) {
+		//debugMask[1000] = (unsigned char)1;
+		/*if (!objs[i].isFixed) {
 			draw_objMask_patch(room, &objs[i], tmpSlot, threadIdx.x, nThreads);
 			draw_patch_on_union_mask(mask, &objs[i], room->rowCount / 2, room->colCount, threadIdx.x, nThreads);
-		}
+		}*/
 	}
 
 
 	__syncthreads();
 
-	sumUpMask(room, mask, tmpSlot, &sWrapper[0].wmaskArea[2 * blockIdx.x], nThreads);
+	sumUpMask(room, mask, tmpSlot, &wmaskArea[0], nThreads);
 
-	sumUpMask(room, backupMask, tmpSlot, &sWrapper[0].wmaskArea[2 * blockIdx.x + 1], nThreads);
+	sumUpMask(room, backupMask, tmpSlot, &wmaskArea[1], nThreads);
 }
 
 __device__
@@ -175,7 +178,7 @@ void getTemporalTransAndRot(sharedRoom * room, singleObj* objs, float * results,
 __device__
 int randomly_perturb(sharedRoom* room, singleObj * objs, int pickedIdx,
 	unsigned char*initialMask, unsigned char * mask, unsigned char* backupMask,
-	float* tmpSlot) {
+	float *wmaskArea, float* tmpSlot) {
 	int secondChangeId = -1;
 	singleObj * obj = &objs[pickedIdx];
 	storeOrigin(obj);
@@ -249,14 +252,14 @@ int randomly_perturb(sharedRoom* room, singleObj * objs, int pickedIdx,
 
 	__syncthreads();
 
-	sumUpMask(room, mask, tmpSlot, &sWrapper[0].wmaskArea[2 * blockIdx.x], nThreads);
-	sumUpMask(room, backupMask, tmpSlot, &sWrapper[0].wmaskArea[2 * blockIdx.x + 1], nThreads);
+	sumUpMask(room, mask, tmpSlot, &wmaskArea[0], nThreads);
+	sumUpMask(room, backupMask, tmpSlot, &wmaskArea[1], nThreads);
 
 	return secondChangeId;
 }
 
 __device__
-void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
+void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds, maskWrapper maskWrap) {
 	float cpost, p0, p1, alpha;
 	sharedRoom * room = sWrapper[0].wRoom;
 	singleObj * objsBlock = &sWrapper[0].wObjs[blockIdx.x * room->objctNum];
@@ -265,12 +268,12 @@ void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
 	int maskStart = room->mskCount * blockIdx.x;
 	int secondChangeId, pickedId;
 
-	//sharedRoom* room, singleObj * objs,  unsigned char * mask, float* tmpSlot, int threadStride)
 	initial_assignment(room, objsBlock,
-		sWrapper[0].initialMask, &sWrapper[0].wMask[maskStart], &sWrapper[0].backMask[maskStart],
-		&costList[startId]);
-
-	getWeightedCost(room, objsBlock, sWrapper[0].wPairRelation, &sWrapper[0].wmaskArea[2 * blockIdx.x], &costList[startId]);
+		maskWrap.initialMask, &maskWrap.wMask[maskStart], &maskWrap.backMask[maskStart],
+		&maskWrap.wmaskArea[2*blockIdx.x], &costList[startId]);
+	//maskWrap.wmaskArea[2 * blockIdx.x] = 5000;
+	//maskWrap.wmaskArea[2 * blockIdx.x + 1] = 5000;
+	getWeightedCost(room, objsBlock, sWrapper[0].wPairRelation, &maskWrap.wmaskArea[2 * blockIdx.x], &costList[startId]);
 	__syncthreads();
 
 	float cpre = sumUp_weighted_dataInShare(&costList[startId + 1], weights, WEIGHT_NUM);
@@ -302,10 +305,10 @@ void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
 
 
 		secondChangeId = randomly_perturb(room, objsBlock, pickedId,
-			sWrapper[0].initialMask, &sWrapper[0].wMask[maskStart], &sWrapper[0].backMask[maskStart],
-			&costList[startId]);
+						 maskWrap.initialMask, &maskWrap.wMask[maskStart], &maskWrap.backMask[maskStart],
+						 &maskWrap.wmaskArea[2*blockIdx.x], &costList[startId]);
 
-		getWeightedCost(room, objsBlock, sWrapper[0].wPairRelation, &sWrapper[0].wmaskArea[2 * blockIdx.x], &costList[startId]);
+		getWeightedCost(room, objsBlock, sWrapper[0].wPairRelation, &maskWrap.wmaskArea[2 * blockIdx.x], &costList[startId]);
 		// if(threadIdx.x == 0 && nt%10==0 ){
 		//     for(int i=0; i<2; i++)
 		//         printf("obj: %d, loc: %f, %f\n",i, objsBlock[i].translation[0], objsBlock[i].translation[1] );
@@ -323,10 +326,10 @@ void Metropolis_Hastings(float* costList, float* temparature, int*pickedupIds) {
 			alpha = fminf(1.0f, p1 / p0);
 			// printf("alpha: %f cpre: %f cpost: %f\n",alpha, cpre, cpost );
 			if (alpha < THREADHOLD_T) {
-				restoreOrigin(room, &sWrapper[0].wMask[maskStart], &costList[startId],
+				restoreOrigin(room, &maskWrap.wMask[maskStart], &costList[startId],
 					&objsBlock[pickedId], nThreads);
 				if (secondChangeId != -1)
-					restoreOrigin(room, &sWrapper[0].wMask[maskStart], &costList[startId],
+					restoreOrigin(room, &maskWrap.wMask[maskStart], &costList[startId],
 						&objsBlock[secondChangeId], nThreads);
 			}
 			else if (cpost < cpre) {
@@ -364,23 +367,22 @@ void Initialize_Room_In_Device(sharedRoom* room, singleObj* objs, unsigned char*
 	}
 }
 __global__
-void Do_Metropolis_Hastings(sharedWrapper *gWrapper, float * gArray) {
+void Do_Metropolis_Hastings(sharedWrapper *gWrapper, maskWrapper* maskWrap) {
 	sWrapper[0] = *gWrapper;
 	if (blockIdx.x == 0) {
-		Initialize_Room_In_Device(sWrapper[0].wRoom, sWrapper[0].wObjs, sWrapper[0].initialMask, sWrapper[0].obstacleVertices, sWrapper[0].wFloats);
+		Initialize_Room_In_Device(sWrapper[0].wRoom, sWrapper[0].wObjs, maskWrap[0].initialMask, sWrapper[0].obstacleVertices, sWrapper[0].wFloats);
 	}
-	else {
-		if (threadIdx.x < sWrapper[0].wRoom->objctNum) {
+	else if(threadIdx.x < sWrapper[0].wRoom->objctNum){
 			int objId = blockIdx.x * sWrapper[0].wRoom->objctNum + threadIdx.x;
 			sWrapper[0].wObjs[objId] = sWrapper[0].wObjs[threadIdx.x];
-		}
-		int baseId = blockIdx.x *sWrapper[0].wRoom->mskCount;
-		for (int i = threadIdx.x; i<sWrapper[0].wRoom->rowCount; i += nThreads) {
-			for (int j = 0; j<sWrapper[0].wRoom->colCount; j++)
-				sWrapper[0].wMask[baseId + i * sWrapper[0].wRoom->colCount + j] = sWrapper[0].wMask[i * sWrapper[0].wRoom->colCount + j];
-		}
 	}
 
+
+	/*int baseId = blockIdx.x *sWrapper[0].wRoom->mskCount;
+	for (int i = threadIdx.x; i<sWrapper[0].wRoom->rowCount; i += nThreads)
+		for (int j = 0; j<sWrapper[0].wRoom->colCount; j++)
+			sWrapper[0].wMask[baseId + i * sWrapper[0].wRoom->colCount + j] = sWrapper[0].wMask[i * sWrapper[0].wRoom->colCount + j];
+			*/
 	float* costList = sWrapper[0].wFloats;
 	float* temparature = (float *)& costList[nBlocks * nThreads];
 	int * pickedupIds = (int*)&temparature[nBlocks];
@@ -389,8 +391,9 @@ void Do_Metropolis_Hastings(sharedWrapper *gWrapper, float * gArray) {
 	for (int i = threadIdx.x; i<gWrapper->nTimes; i += nThreads)
 		pickedupIds[i] = sWrapper[0].wRoom->freeObjIds[get_int_random(sWrapper[0].wRoom->freeObjNum)];
 
+	
 
-	Metropolis_Hastings(costList, temparature, pickedupIds);
+	Metropolis_Hastings(costList, temparature, pickedupIds, maskWrap[0]);
 	// if(blockIdx.x == 0)
 	// printf("thread: %d, err: \n",threadIdx.x, cudaGetLastError());
 	__syncthreads();
@@ -413,32 +416,41 @@ void copyShare(Room * hroom, sharedRoom * sroom) {
 	cudaMemcpy(sroom->pairMap, hroom->pairMap, CONSTRAIN_PAIRS * sizeof(pairMapStruct), cudaMemcpyHostToDevice);
 }
 void generate_suggestions(Room * m_room, string & resString, int nTimes) {
+	maskWrapper * gmaskWrapper;
+	cudaMallocManaged(&gmaskWrapper, sizeof(maskWrapper));
+	unsigned tMem = m_room->rowCount * m_room->colCount  * sizeof(unsigned char);
+	cudaMallocManaged(&gmaskWrapper->initialMask, tMem);
+	cudaMemset(gmaskWrapper->initialMask, 0, tMem);
+
+	cudaMallocManaged(&gmaskWrapper->wMask, nBlocks *tMem);
+
+	cudaMallocManaged(&gmaskWrapper->backMask, nBlocks *tMem);
+	cudaMemset(gmaskWrapper->backMask, 0, nBlocks*tMem);
+
+	unsigned maskAreaMem = 2 * nBlocks * sizeof(float);
+	cudaMallocManaged(&gmaskWrapper->wmaskArea, maskAreaMem);
+	cudaMemset(gmaskWrapper->wmaskArea, 0, maskAreaMem);
+
+	//Init gWrapper
 	sharedWrapper *gWrapper;
 	cudaMallocManaged(&gWrapper, sizeof(sharedWrapper));
-
 	gWrapper->nTimes = nTimes;
 	cudaMallocManaged(&gWrapper->wRoom, sizeof(sharedRoom));
 	m_room->CopyToSharedRoom(gWrapper->wRoom);
 	copyShare(m_room, gWrapper->wRoom);
 
-	int objMem = nBlocks * m_room->objctNum * sizeof(singleObj);
+	unsigned objMem = nBlocks * m_room->objctNum * sizeof(singleObj);
 	cudaMallocManaged(&gWrapper->wObjs, objMem);
+	
+	//patches masks
+	unsigned totalobjMskMem = 0;
 	for (int i = 0; i<m_room->objctNum; i++) {
 		gWrapper->wObjs[i] = m_room->objects[i];
-		cudaMallocManaged(&gWrapper->wObjs[i].objMask, m_room->objects[i].maskLen* m_room->objects[i].maskLen * sizeof(unsigned char));
+		unsigned objMskMem = m_room->objects[i].maskLen* m_room->objects[i].maskLen * sizeof(unsigned char);
+		cudaMallocManaged(&gWrapper->wObjs[i].objMask, objMskMem);
+		totalobjMskMem += objMskMem;
 		cudaMemset(gWrapper->wObjs[i].objMask, 0, m_room->objects[i].maskLen* m_room->objects[i].maskLen);
 	}
-
-	// Initial three masks
-	int tMem = gWrapper->wRoom->mskCount * sizeof(unsigned char);
-
-	cudaMallocManaged(&gWrapper->initialMask, tMem);
-	cudaMemset(gWrapper->initialMask, 0, tMem);
-
-	cudaMallocManaged(&gWrapper->wMask, nBlocks *tMem);
-
-	cudaMallocManaged(&gWrapper->backMask, nBlocks *tMem);
-	cudaMemset(gWrapper->backMask, 0, nBlocks*tMem);
 
 	if (m_room->obstacles.size() != 0) {
 		int obstacleVerticesMem = sizeof(float) * 8 * m_room->obstacles.size();
@@ -448,12 +460,11 @@ void generate_suggestions(Room * m_room, string & resString, int nTimes) {
 
 	int floatMem = (nBlocks *(2 + nThreads)) * sizeof(float);
 	cudaMallocManaged(&gWrapper->wFloats, floatMem);
-	int maskAreaMem = 2 * nBlocks * sizeof(float);
-	cudaMallocManaged(&gWrapper->wmaskArea, maskAreaMem);
-	cudaMemset(gWrapper->wmaskArea, 0, maskAreaMem);
+
 	
+	unsigned pairMem = 0;
 	if (m_room->actualPairs.size()) {
-		int pairMem = m_room->actualPairs.size() * 4 * sizeof(int);
+		pairMem = m_room->actualPairs.size() * 4 * sizeof(int);
 		cudaMallocManaged(&gWrapper->wPairRelation, pairMem);
 		for (int i = 0; i<m_room->actualPairs.size(); i++) {
 			for (int j = 0; j<4; j++)
@@ -461,16 +472,13 @@ void generate_suggestions(Room * m_room, string & resString, int nTimes) {
 		}
 	}
 	
-	int resMem = (m_room->objctNum * 4 + 1) * MAX_KEPT_RES * sizeof(float);
+	unsigned resMem = (m_room->objctNum * 4 + 1) * MAX_KEPT_RES * sizeof(float);
 	cudaMallocManaged(&gWrapper->resTransAndRot, resMem);
 
-	float * gArray;
-	cudaMallocManaged(&gArray, nThreads * sizeof(float));
-	const char * errStr1 = cudaGetErrorString(cudaGetLastError());
-	cout << "error:" << errStr1 << endl;
+	unsigned totolMem = sizeof(sharedWrapper) + sizeof(sharedRoom)
+		+ objMem  + floatMem + pairMem + resMem + nThreads * sizeof(float);
 
-
-	Do_Metropolis_Hastings<<<nBlocks, nThreads, sizeof(*gWrapper)>>>(gWrapper, gArray);
+ 	Do_Metropolis_Hastings<<<nBlocks, nThreads, totolMem>>>(gWrapper, gmaskWrapper);
 
 
 	cudaDeviceSynchronize();
@@ -504,12 +512,14 @@ void generate_suggestions(Room * m_room, string & resString, int nTimes) {
 			cout << res << endl;
 		}
 	}
+	cudaFree(gmaskWrapper->initialMask);
+	cudaFree(gmaskWrapper->wMask);
+	cudaFree(gmaskWrapper->backMask);
+	cudaFree(gmaskWrapper->wMask);
+	cudaFree(gmaskWrapper->wmaskArea);
 
 	cudaFree(gWrapper->wRoom);
 	cudaFree(gWrapper->wObjs);
-	cudaFree(gWrapper->initialMask);
-	cudaFree(gWrapper->wMask);
-	cudaFree(gWrapper->backMask);
 	cudaFree(gWrapper->obstacleVertices);
 	cudaFree(gWrapper->wFloats);
 	cudaFree(gWrapper->wPairRelation);
@@ -533,6 +543,6 @@ void startToProcess(Room * m_room, string &resString, int nTimes) {
 void Entrance(string rawString, string &resString) {
 	Room* parserRoom = new Room();
 	parser_customer_input_string(rawString, parserRoom, true);
-	startToProcess(parserRoom, resString, PROCESS_NTIMES);
+	startToProcess(parserRoom, resString, 0);
 }
 
