@@ -86,10 +86,7 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="room.cpp" />
+    <ClCompile Include="Layouter\room.cpp" />
     <ClCompile Include="TCPServer\Encoder.cpp" />
     <ClCompile Include="TCPServer\Pipehandler.cpp" />
     <ClCompile Include="TCPServer\Server.cpp" />
@@ -101,14 +98,17 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     <ClInclude Include="Layouter\cudaroom.cuh" />
     <ClInclude Include="Layouter\hostUtils.h" />
     <ClInclude Include="Layouter\predefinedConstrains.h" />
+    <ClInclude Include="Layouter\predefinedFurnitureParams.h" />
     <ClInclude Include="Layouter\room.h" />
     <ClInclude Include="Layouter\utils.cuh" />
-    <ClInclude Include="predefinedFurnitureParams.h" />
     <ClInclude Include="TCPServer\Encoder.h" />
     <ClInclude Include="TCPServer\Pipehandler.h" />
     <ClInclude Include="TCPServer\stdafx.h" />
     <ClInclude Include="TCPServer\targetver.h" />
     <ClInclude Include="TCPServer\TCPServer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Layouter\kernel.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

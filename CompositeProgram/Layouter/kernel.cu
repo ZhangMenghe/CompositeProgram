@@ -5,18 +5,19 @@
 #include <iostream>
 #include <stdio.h>
 #include <string>
+#include <time.h>   
 
-#include "Layouter/room.h"
-#include "Layouter/cudaroom.cuh"
-#include "Layouter/utils.cuh"
-#include "Layouter/constrainTerms.cuh"
-#include "Layouter/hostUtils.h"
+#include "room.h"
+#include "cudaroom.cuh"
+#include "utils.cuh"
+#include "constrainTerms.cuh"
+#include "hostUtils.h"
 
 using namespace std;
 
 #define THREADHOLD_T 0.7
 
-const unsigned int nBlocks = 40;
+const unsigned int nBlocks = 2;
 const unsigned int nThreads = 32;//it's werid
 const unsigned int WHICH_GPU = 0;
 
@@ -469,7 +470,7 @@ void generate_suggestions(Room * m_room, string & resString, int nTimes) {
 	cout << "error:" << errStr1 << endl;
 
 
-	Do_Metropolis_Hastings << <nBlocks, nThreads, sizeof(*gWrapper) >> >(gWrapper, gArray);
+	Do_Metropolis_Hastings<<<nBlocks, nThreads, sizeof(*gWrapper)>>>(gWrapper, gArray);
 
 
 	cudaDeviceSynchronize();

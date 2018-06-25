@@ -1,9 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CudaCompile Include="kernel.cu" />
-  </ItemGroup>
-  <ItemGroup>
     <Filter Include="Source">
       <UniqueIdentifier>{ef224f06-00cc-46b3-a845-214497a0c3ee}</UniqueIdentifier>
     </Filter>
@@ -39,7 +36,7 @@
     <ClCompile Include="TCPServer\TCPServer.cpp">
       <Filter>Source\TCPServer</Filter>
     </ClCompile>
-    <ClCompile Include="room.cpp">
+    <ClCompile Include="Layouter\room.cpp">
       <Filter>Source\Layouter</Filter>
     </ClCompile>
   </ItemGroup>
@@ -59,26 +56,31 @@
     <ClInclude Include="TCPServer\TCPServer.h">
       <Filter>Header\TCPServer</Filter>
     </ClInclude>
-    <ClInclude Include="Layouter\hostUtils.h">
-      <Filter>Header\Layouter</Filter>
-    </ClInclude>
-    <ClInclude Include="Layouter\constrainTerms.cuh">
+    <ClInclude Include="Layouter\utils.cuh">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
     <ClInclude Include="Layouter\cudaroom.cuh">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
-    <ClInclude Include="Layouter\utils.cuh">
+    <ClInclude Include="Layouter\constrainTerms.cuh">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
     <ClInclude Include="Layouter\room.h">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
-    <ClInclude Include="predefinedFurnitureParams.h">
+    <ClInclude Include="Layouter\predefinedFurnitureParams.h">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
     <ClInclude Include="Layouter\predefinedConstrains.h">
       <Filter>Header\Layouter</Filter>
     </ClInclude>
+    <ClInclude Include="Layouter\hostUtils.h">
+      <Filter>Header\Layouter</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CudaCompile Include="Layouter\kernel.cu">
+      <Filter>Source\Layouter</Filter>
+    </CudaCompile>
   </ItemGroup>
 </Project>

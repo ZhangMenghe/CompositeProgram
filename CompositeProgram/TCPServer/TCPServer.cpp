@@ -90,7 +90,7 @@ void TCPServer::update()
 {
   //
 	std::string gResString;
-	Entrance("4", gResString);
+	Entrance("4 1", gResString);
   do
   {
     bool res = acceptClient();
