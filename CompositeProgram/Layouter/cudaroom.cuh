@@ -67,9 +67,11 @@ void update_mask_by_boundingBox(unsigned char* mask, mRect2f boundingBox, int ha
     }
 }
 __device__
-void draw_objMask_patch(sharedRoom * room, singleObj * obj, float* tmpSlot, int absThreadIdx, int threadStride){
+void draw_objMask_patch(sharedRoom * room, singleObj * obj, 
+						unsigned char* objMask, unsigned maskSize, 
+						float* tmpSlot, int absThreadIdx, int threadStride) {
     mRect2f * bbox = &obj->boundingBox;
-    memset(obj->objMask, 0, obj->maskLen*obj->maskLen * sizeof(unsigned char));
+    memset(objMask, 0, maskSize);
     int boundX = bbox->x + bbox->width;
     int pos;
     for(int y=bbox->y - absThreadIdx; y>bbox->y - bbox->height; y-= threadStride){
@@ -80,22 +82,23 @@ void draw_objMask_patch(sharedRoom * room, singleObj * obj, float* tmpSlot, int 
                 int endIndx = binary_search_Inside_Point(x, boundX - 1, 0, y, tmpSlot, obj->vertices);
                 for(;x<=endIndx;x++){
                     pos = (bbox->y - y) * obj->maskLen + (x - bbox->x);
-                    obj->objMask[pos] = 1;
+					objMask[pos] = 1;
                 }
             }
         }
     }
-    sumUpMask(room, obj->objMask, tmpSlot, &obj->area, threadStride);
+    sumUpMask(room, objMask, tmpSlot, &obj->area, threadStride);
 }
 __device__
-void draw_patch_on_union_mask(unsigned char * mask, singleObj * obj, int halfRowNum, int colNum,
+void draw_patch_on_union_mask(unsigned char * mask, singleObj * obj, unsigned char* objMask,
+								int halfRowNum, int colNum,
                                 int absThreadIdx, int threadStride){
     int basey = halfRowNum - obj->boundingBox.y;
     int pos;
     for(int y=absThreadIdx; y<obj->boundingBox.height;y+=threadStride)
         for(int x=0; x<obj->boundingBox.width; x++){
             pos = (basey + y)* colNum + obj->boundingBox.x + x + int(colNum/2);
-            mask[pos] = obj->objMask[y*obj->maskLen + x];
+            mask[pos] = objMask[y*obj->maskLen + x];
         }
 }
 
